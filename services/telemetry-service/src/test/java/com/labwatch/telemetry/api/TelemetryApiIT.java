@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.kafka.KafkaContainer;
 
+// @SpringBootTest disables metrics export by default; observability must be
+// re-enabled for the /actuator/prometheus endpoint to exist in this test.
+@AutoConfigureObservability
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TelemetryApiIT {
 
@@ -103,6 +107,28 @@ class TelemetryApiIT {
         assertThat(missingDevice.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat((Map<String, ?>) missingDevice.getBody().get("fieldErrors"))
                 .containsKeys("deviceId", "humidity");
+    }
+
+    @Test
+    void should_expose_telemetry_metrics_when_prometheus_endpoint_is_scraped() {
+        // Only rejected telemetry: publishing here would leak an extra record
+        // into the topic the publish test reads with getSingleRecord. The
+        // received counter and publish timer are registered eagerly, so they
+        // appear in the scrape without traffic.
+        rest.postForEntity("/api/telemetry",
+                Map.of("deviceId", "chamber-042",
+                        "timestamp", Instant.now().plusSeconds(3600).toString(),
+                        "temperature", 5.0, "humidity", 50.0, "operatingState", "RUNNING"),
+                Map.class);
+
+        ResponseEntity<String> scrape = rest.getForEntity("/actuator/prometheus", String.class);
+
+        assertThat(scrape.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(scrape.getBody())
+                .contains("labwatch_telemetry_received_total")
+                .contains("labwatch_telemetry_rejected_total")
+                .contains("reason=\"invalid_timestamp\"")
+                .contains("labwatch_telemetry_publish_duration_seconds_count");
     }
 
     @Test

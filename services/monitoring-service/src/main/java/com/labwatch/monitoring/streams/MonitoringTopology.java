@@ -6,6 +6,7 @@ import com.labwatch.contracts.EventEnvelope;
 import com.labwatch.contracts.Topics;
 import com.labwatch.contracts.policy.DevicePoliciesPayload;
 import com.labwatch.contracts.telemetry.DeviceTelemetryPayload;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.util.Set;
 import org.apache.kafka.common.serialization.Serdes;
@@ -37,10 +38,12 @@ public class MonitoringTopology {
 
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final MeterRegistry meterRegistry;
 
-    public MonitoringTopology(ObjectMapper objectMapper, Clock clock) {
+    public MonitoringTopology(ObjectMapper objectMapper, Clock clock, MeterRegistry meterRegistry) {
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.meterRegistry = meterRegistry;
     }
 
     @Bean
@@ -76,7 +79,7 @@ public class MonitoringTopology {
         return new ProcessorSupplier<>() {
             @Override
             public Processor<String, JoinedTelemetry, String, String> get() {
-                return new ViolationDetector(objectMapper, clock);
+                return new ViolationDetector(objectMapper, clock, meterRegistry);
             }
 
             @Override

@@ -13,6 +13,7 @@ import com.labwatch.contracts.telemetry.DeviceOperatingState;
 import com.labwatch.contracts.telemetry.DeviceTelemetryPayload;
 import com.labwatch.telemetry.api.TelemetryDtos.TelemetryRequest;
 import com.labwatch.telemetry.messaging.TelemetryEventPublisher;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -25,8 +26,9 @@ class TelemetryIngestionServiceTest {
     private static final Instant NOW = Instant.parse("2026-07-12T12:00:00Z");
 
     private final TelemetryEventPublisher publisher = mock(TelemetryEventPublisher.class);
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private final TelemetryIngestionService service =
-            new TelemetryIngestionService(publisher, Clock.fixed(NOW, ZoneOffset.UTC));
+            new TelemetryIngestionService(publisher, meterRegistry, Clock.fixed(NOW, ZoneOffset.UTC));
 
     @Test
     void should_publish_envelope_with_normalized_values() {
@@ -57,6 +59,27 @@ class TelemetryIngestionServiceTest {
                 .isInstanceOf(InvalidTelemetryException.class)
                 .hasMessageContaining("future");
         verify(publisher, never()).publish(any());
+    }
+
+    @Test
+    void should_count_received_telemetry_when_ingestion_succeeds() {
+        TelemetryRequest request = new TelemetryRequest("chamber-042", NOW.minusSeconds(1),
+                new BigDecimal("5.0"), new BigDecimal("50.0"), DeviceOperatingState.RUNNING);
+
+        service.ingest(request, UUID.randomUUID());
+
+        assertThat(meterRegistry.counter("labwatch.telemetry.received").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void should_not_count_received_telemetry_when_ingestion_is_rejected() {
+        TelemetryRequest request = new TelemetryRequest("chamber-042", NOW.plusSeconds(120),
+                new BigDecimal("5.0"), new BigDecimal("50.0"), DeviceOperatingState.RUNNING);
+
+        assertThatThrownBy(() -> service.ingest(request, UUID.randomUUID()))
+                .isInstanceOf(InvalidTelemetryException.class);
+
+        assertThat(meterRegistry.counter("labwatch.telemetry.received").count()).isZero();
     }
 
     @Test

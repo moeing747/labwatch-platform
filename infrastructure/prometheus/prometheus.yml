@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+
+# One job per service so the `job` label carries the service name.
+scrape_configs:
+  - job_name: asset-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["asset-service:8081"]
+  - job_name: telemetry-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["telemetry-service:8082"]
+  - job_name: incident-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["incident-service:8083"]
+  - job_name: telemetry-storage-consumer
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["telemetry-storage-consumer:8084"]
+  - job_name: monitoring-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["monitoring-service:8085"]

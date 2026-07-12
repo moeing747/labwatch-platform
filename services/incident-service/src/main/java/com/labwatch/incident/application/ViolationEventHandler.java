@@ -36,15 +36,17 @@ public class ViolationEventHandler {
     private final IncidentHistoryRepository history;
     private final ProcessedEventRepository processedEvents;
     private final OutboxWriter publisher;
+    private final IncidentMetrics metrics;
     private final Clock clock;
 
     public ViolationEventHandler(IncidentRepository incidents, IncidentHistoryRepository history,
                                  ProcessedEventRepository processedEvents, OutboxWriter publisher,
-                                 Clock clock) {
+                                 IncidentMetrics metrics, Clock clock) {
         this.incidents = incidents;
         this.history = history;
         this.processedEvents = processedEvents;
         this.publisher = publisher;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -60,6 +62,7 @@ public class ViolationEventHandler {
                 now));
         markProcessed(envelope, now);
         publisher.publish(EventTypes.INCIDENT_OPENED, incident, null, envelope.correlationId());
+        metrics.recordOpened(incident);
         log.info("Incident {} opened for device {} ({})", incident.getId(), incident.getDeviceId(),
                 incident.getReason());
     }

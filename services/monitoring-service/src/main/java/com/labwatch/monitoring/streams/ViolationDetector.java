@@ -8,11 +8,14 @@ import com.labwatch.contracts.monitoring.ViolationResolvedPayload;
 import com.labwatch.contracts.monitoring.ViolationStartedPayload;
 import com.labwatch.contracts.policy.MonitoringPolicySnapshot;
 import com.labwatch.contracts.telemetry.DeviceTelemetryPayload;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
@@ -37,12 +40,18 @@ public class ViolationDetector implements Processor<String, JoinedTelemetry, Str
 
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final MeterRegistry meterRegistry;
+    private final Timer processingTimer;
     private ProcessorContext<String, String> context;
     private KeyValueStore<String, ViolationState> store;
 
-    public ViolationDetector(ObjectMapper objectMapper, Clock clock) {
+    public ViolationDetector(ObjectMapper objectMapper, Clock clock, MeterRegistry meterRegistry) {
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.meterRegistry = meterRegistry;
+        this.processingTimer = Timer.builder("labwatch.monitoring.processing.duration")
+                .description("Time spent evaluating one telemetry event against its policies")
+                .register(meterRegistry);
     }
 
     @Override
@@ -53,6 +62,7 @@ public class ViolationDetector implements Processor<String, JoinedTelemetry, Str
 
     @Override
     public void process(Record<String, JoinedTelemetry> record) {
+        long start = System.nanoTime();
         EventEnvelope<DeviceTelemetryPayload> telemetry = record.value().telemetry();
         for (MonitoringPolicySnapshot policy : record.value().policies().policies()) {
             BigDecimal measured = measuredValue(telemetry.payload(), policy);
@@ -60,6 +70,7 @@ public class ViolationDetector implements Processor<String, JoinedTelemetry, Str
                 evaluate(record, telemetry, policy, measured);
             }
         }
+        processingTimer.record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
     }
 
     private void evaluate(Record<String, JoinedTelemetry> record, EventEnvelope<DeviceTelemetryPayload> telemetry,
@@ -98,6 +109,8 @@ public class ViolationDetector implements Processor<String, JoinedTelemetry, Str
                 telemetry.payload().deviceId(), policy.metric(), measured, threshold,
                 startedAt, detectedAt, policy.severity());
         forward(record, EventTypes.violationStarted(policy.metric().name()), detectedAt, telemetry, payload);
+        meterRegistry.counter("labwatch.violations.started",
+                "metric", policy.metric().name(), "severity", policy.severity().name()).increment();
         log.info("Violation started: device={} metric={} value={} threshold={}",
                 telemetry.payload().deviceId(), policy.metric(), measured, threshold);
     }
@@ -107,6 +120,8 @@ public class ViolationDetector implements Processor<String, JoinedTelemetry, Str
         ViolationResolvedPayload payload = new ViolationResolvedPayload(
                 telemetry.payload().deviceId(), policy.metric(), measured, resolvedAt);
         forward(record, EventTypes.violationResolved(policy.metric().name()), resolvedAt, telemetry, payload);
+        meterRegistry.counter("labwatch.violations.resolved",
+                "metric", policy.metric().name(), "severity", policy.severity().name()).increment();
         log.info("Violation resolved: device={} metric={} value={}",
                 telemetry.payload().deviceId(), policy.metric(), measured);
     }

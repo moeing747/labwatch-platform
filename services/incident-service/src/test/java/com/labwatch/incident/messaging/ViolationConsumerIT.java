@@ -19,6 +19,7 @@ import com.labwatch.incident.domain.HistoryAction;
 import com.labwatch.incident.domain.Incident;
 import com.labwatch.incident.domain.IncidentHistoryRepository;
 import com.labwatch.incident.domain.IncidentRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +45,9 @@ class ViolationConsumerIT extends ContainerSupport {
 
     @Autowired
     private IncidentHistoryRepository history;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -75,6 +79,12 @@ class ViolationConsumerIT extends ContainerSupport {
         assertThat(incident.getStatus()).isEqualTo(IncidentStatus.OPEN);
         assertThat(incident.getReason()).isEqualTo("TEMPERATURE_ABOVE_LIMIT");
         assertThat(incident.getMeasuredValue()).isEqualByComparingTo("9.40");
+        // The opened counter is asserted in IncidentApiIT: with cached test
+        // contexts sharing one consumer group, this record may be consumed -
+        // and counted - by another context's listener. The gauge reads the
+        // shared database, so it is deterministic here.
+        assertThat(meterRegistry.get("labwatch.incidents.open.current").gauge().value())
+                .isGreaterThanOrEqualTo(1.0);
     }
 
     private String startedJson(UUID eventId) throws Exception {

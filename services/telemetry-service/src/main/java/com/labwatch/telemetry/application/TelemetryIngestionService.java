@@ -5,6 +5,8 @@ import com.labwatch.contracts.EventTypes;
 import com.labwatch.contracts.telemetry.DeviceTelemetryPayload;
 import com.labwatch.telemetry.api.TelemetryDtos.TelemetryRequest;
 import com.labwatch.telemetry.messaging.TelemetryEventPublisher;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -21,10 +23,14 @@ public class TelemetryIngestionService {
     private static final String PRODUCER_NAME = "telemetry-service";
 
     private final TelemetryEventPublisher publisher;
+    private final Counter receivedCounter;
     private final Clock clock;
 
-    public TelemetryIngestionService(TelemetryEventPublisher publisher, Clock clock) {
+    public TelemetryIngestionService(TelemetryEventPublisher publisher, MeterRegistry meterRegistry, Clock clock) {
         this.publisher = publisher;
+        this.receivedCounter = Counter.builder("labwatch.telemetry.received")
+                .description("Telemetry readings accepted and published")
+                .register(meterRegistry);
         this.clock = clock;
     }
 
@@ -52,6 +58,7 @@ public class TelemetryIngestionService {
                 payload);
 
         publisher.publish(envelope);
+        receivedCounter.increment();
         return envelope;
     }
 

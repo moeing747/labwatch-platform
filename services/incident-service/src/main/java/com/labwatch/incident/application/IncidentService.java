@@ -23,13 +23,15 @@ public class IncidentService {
     private final IncidentRepository incidents;
     private final IncidentHistoryRepository history;
     private final OutboxWriter publisher;
+    private final IncidentMetrics metrics;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentHistoryRepository history,
-                           OutboxWriter publisher, Clock clock) {
+                           OutboxWriter publisher, IncidentMetrics metrics, Clock clock) {
         this.incidents = incidents;
         this.history = history;
         this.publisher = publisher;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -76,6 +78,7 @@ public class IncidentService {
         incident.resolve(now);
         record(incident, HistoryAction.RESOLVED, null, now);
         publisher.publish(EventTypes.INCIDENT_RESOLVED, incident, null, UUID.randomUUID());
+        metrics.recordResolved(incident, now);
         return incident;
     }
 

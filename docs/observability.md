@@ -10,6 +10,21 @@ Grafana
 Structured JSON logging
 ```
 
+## Running
+
+`docker compose up -d` starts Prometheus (<http://localhost:9090>) and Grafana
+(<http://localhost:3000>, anonymous access) alongside the services. Prometheus
+scrapes every service's `/actuator/prometheus` endpoint every 15 seconds with
+one job per service, so the `job` label carries the service name. Configuration
+lives in [infrastructure/prometheus](../infrastructure/prometheus/) and
+[infrastructure/grafana](../infrastructure/grafana/); the three dashboards
+below are provisioned automatically from
+[infrastructure/grafana/dashboards](../infrastructure/grafana/dashboards/).
+
+Metrics are registered in code without suffixes (for example
+`labwatch.telemetry.received`); Micrometer's Prometheus naming convention adds
+`_total` to counters and `_seconds` to timers, producing the names listed here.
+
 ## Metrics
 
 ### Telemetry Metrics

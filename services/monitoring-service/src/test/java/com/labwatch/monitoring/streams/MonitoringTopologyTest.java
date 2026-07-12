@@ -15,6 +15,7 @@ import com.labwatch.contracts.policy.MonitoringPolicySnapshot;
 import com.labwatch.contracts.policy.Severity;
 import com.labwatch.contracts.telemetry.DeviceOperatingState;
 import com.labwatch.contracts.telemetry.DeviceTelemetryPayload;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -47,6 +48,7 @@ class MonitoringTopologyTest {
     @TempDir
     Path stateDir;
 
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private TopologyTestDriver driver;
     private TestInputTopic<String, String> policyTopic;
     private TestInputTopic<String, String> telemetryTopic;
@@ -55,7 +57,7 @@ class MonitoringTopologyTest {
     @BeforeEach
     void setUpTopology() {
         StreamsBuilder builder = new StreamsBuilder();
-        new MonitoringTopology(mapper, Clock.fixed(T0, ZoneOffset.UTC)).violationStream(builder);
+        new MonitoringTopology(mapper, Clock.fixed(T0, ZoneOffset.UTC), meterRegistry).violationStream(builder);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "monitoring-topology-test");
@@ -139,6 +141,21 @@ class MonitoringTopologyTest {
                 "TEMPERATURE_VIOLATION_STARTED",
                 "TEMPERATURE_VIOLATION_RESOLVED",
                 "TEMPERATURE_VIOLATION_STARTED");
+    }
+
+    @Test
+    void should_count_started_and_resolved_violations_when_cycle_completes() {
+        givenTemperaturePolicy(180);
+
+        pipeTemperature("9.0", T0);
+        pipeTemperature("9.4", T0.plusSeconds(180));
+        pipeTemperature("7.5", T0.plusSeconds(300));
+
+        assertThat(meterRegistry.counter("labwatch.violations.started",
+                "metric", "TEMPERATURE", "severity", "HIGH").count()).isEqualTo(1.0);
+        assertThat(meterRegistry.counter("labwatch.violations.resolved",
+                "metric", "TEMPERATURE", "severity", "HIGH").count()).isEqualTo(1.0);
+        assertThat(meterRegistry.timer("labwatch.monitoring.processing.duration").count()).isEqualTo(3);
     }
 
     @Test

@@ -1,0 +1,83 @@
+{
+  "uid": "labwatch-system",
+  "title": "LabWatch — System Overview",
+  "tags": ["labwatch"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Service health",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "up", "legendFormat": "{{job}}", "instant": true, "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red", "index": 0 },
+                "1": { "text": "UP", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Telemetry events per second",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "expr": "rate(labwatch_telemetry_received_total[1m])", "legendFormat": "received", "refId": "A" },
+        { "expr": "sum(rate(labwatch_telemetry_rejected_total[1m]))", "legendFormat": "rejected", "refId": "B" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Kafka consumer lag",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "expr": "sum by (job, topic) (kafka_consumer_fetch_manager_records_lag)", "legendFormat": "{{job}} {{topic}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Consumer processing latency (mean)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "expr": "sum by (job) (rate(spring_kafka_listener_seconds_sum[5m])) / sum by (job) (rate(spring_kafka_listener_seconds_count[5m]))", "legendFormat": "{{job}}", "refId": "A" },
+        { "expr": "rate(labwatch_telemetry_publish_duration_seconds_sum[5m]) / rate(labwatch_telemetry_publish_duration_seconds_count[5m])", "legendFormat": "telemetry publish", "refId": "B" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "DLT messages by topic",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "targets": [
+        { "expr": "sum by (topic) (rate(kafka_producer_topic_record_send_total{topic=~\".+\\\\.dlt\"}[5m]))", "legendFormat": "{{topic}}", "refId": "A" }
+      ]
+    }
+  ]
+}

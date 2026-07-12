@@ -13,7 +13,8 @@ Operationalizes the [roadmap](roadmap.md). The roadmap defines phases and exit c
 | 4 — Incident Workflow | Done (2026-07-12) |
 | 5 — Reliability | Done (2026-07-12) |
 | 6 — Transactional Outbox | Done (2026-07-12) |
-| 7 — Observability | Next |
+| 7 — Observability | Done (2026-07-12) |
+| Advanced backlog | Next |
 
 Update this table in the same change that completes a phase.
 

@@ -39,8 +39,10 @@ Prerequisites: JDK 21 or newer (`JAVA_HOME` must point to it) and Docker. The Ma
 ```bash
 git config core.hooksPath .githooks   # enable the commit-message hook (once)
 ./mvnw verify                         # build and test all modules
-docker compose up -d                  # start Kafka, PostgreSQL, and the services
+docker compose up -d                  # start Kafka, PostgreSQL, the services, Prometheus, and Grafana
 ```
+
+Grafana serves the provisioned dashboards at [localhost:3000](http://localhost:3000) (no login required); Prometheus runs at [localhost:9090](http://localhost:9090).
 
 To run the device simulation (5 devices with a temperature-drift profile posting telemetry through Kafka into PostgreSQL):
 
@@ -55,7 +57,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 ## Status
 
-Phases 0–5 are implemented: device and policy management (Asset Service), the telemetry pipeline (Telemetry Service, Kafka, storage consumer), the Kafka Streams monitoring engine detecting sustained threshold violations, the incident workflow with an idempotent violation consumer, and reliability hardening (retries with backoff, dead-letter topics, structured JSON logs with correlation IDs, health probes) — all running in Docker Compose with a device simulator. The transactional outbox and observability stack follow per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md).
+Phases 0–7 are implemented: device and policy management (Asset Service), the telemetry pipeline (Telemetry Service, Kafka, storage consumer), the Kafka Streams monitoring engine detecting sustained threshold violations, the incident workflow with an idempotent violation consumer, reliability hardening (retries with backoff, dead-letter topics, structured JSON logs with correlation IDs, health probes), a transactional outbox in the Incident Service, and an observability stack (Micrometer metrics scraped by Prometheus, provisioned Grafana dashboards) — all running in Docker Compose with a device simulator. Advanced features follow per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md).
 
 ## Repository Structure
 
@@ -77,7 +79,6 @@ labwatch-platform/
 │   └── event-contracts/
 │
 ├── infrastructure/
-│   ├── docker/
 │   ├── prometheus/
 │   └── grafana/
 │

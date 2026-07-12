@@ -10,6 +10,7 @@ import com.labwatch.contracts.policy.Severity;
 import com.labwatch.incident.ContainerSupport;
 import com.labwatch.incident.application.ViolationEventHandler;
 import com.labwatch.incident.domain.IncidentRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -35,6 +36,9 @@ class IncidentApiIT extends ContainerSupport {
 
     @Autowired
     private IncidentRepository incidents;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private String openIncident() {
         String device = "api-chamber-" + System.nanoTime();
@@ -62,6 +66,14 @@ class IncidentApiIT extends ContainerSupport {
         ResponseEntity<List> history = rest.getForEntity("/api/incidents/" + id + "/history", List.class);
         assertThat(history.getBody()).extracting(entry -> ((Map<String, ?>) entry).get("action"))
                 .containsExactly("OPENED", "ACKNOWLEDGED", "INVESTIGATION_STARTED", "RESOLVED");
+
+        assertThat(meterRegistry.counter("labwatch.incidents.opened",
+                "severity", "HIGH", "reason", "TEMPERATURE_ABOVE_LIMIT").count())
+                .isGreaterThanOrEqualTo(1.0);
+        assertThat(meterRegistry.counter("labwatch.incidents.resolved", "severity", "HIGH").count())
+                .isGreaterThanOrEqualTo(1.0);
+        assertThat(meterRegistry.timer("labwatch.incident.resolution.duration").count())
+                .isGreaterThanOrEqualTo(1);
     }
 
     @Test

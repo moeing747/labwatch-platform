@@ -14,4 +14,6 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
 
     Optional<Incident> findFirstByDeviceIdAndMetricAndStatusNotOrderByCreatedAtDesc(
             String deviceId, com.labwatch.contracts.policy.Metric metric, IncidentStatus status);
+
+    long countByStatusNot(IncidentStatus status);
 }
