@@ -5,6 +5,7 @@ import com.labwatch.asset.domain.DeviceRepository;
 import com.labwatch.asset.domain.DuplicateResourceException;
 import com.labwatch.asset.domain.LocationRepository;
 import com.labwatch.asset.domain.ResourceNotFoundException;
+import com.labwatch.asset.messaging.PolicyEventPublisher;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -18,11 +19,14 @@ public class DeviceService {
 
     private final DeviceRepository devices;
     private final LocationRepository locations;
+    private final PolicyEventPublisher publisher;
     private final Clock clock;
 
-    public DeviceService(DeviceRepository devices, LocationRepository locations, Clock clock) {
+    public DeviceService(DeviceRepository devices, LocationRepository locations,
+                         PolicyEventPublisher publisher, Clock clock) {
         this.devices = devices;
         this.locations = locations;
+        this.publisher = publisher;
         this.clock = clock;
     }
 
@@ -54,6 +58,9 @@ public class DeviceService {
 
     public void delete(String deviceId) {
         devices.delete(getByDeviceId(deviceId));
+        // The DB cascade removes the device's policies; without this snapshot the
+        // monitoring service would keep enforcing them against a deleted device.
+        publisher.publishPolicySnapshot(deviceId, List.of());
     }
 
     private void requireLocationExists(UUID locationId) {

@@ -22,7 +22,11 @@ spring:
     streams:
       application-id: monitoring-service
       properties:
-        processing.guarantee: at_least_once
+        # exactly_once_v2 makes the state-store update, the emitted violation
+        # event, and the input offset commit atomic. Under at_least_once the
+        # ViolationState.notified flag could be persisted locally while the
+        # emitted event was lost in a crash - silent violation loss (ADR 0006).
+        processing.guarantee: exactly_once_v2
         auto.offset.reset: earliest
         default.deserialization.exception.handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
   jackson:

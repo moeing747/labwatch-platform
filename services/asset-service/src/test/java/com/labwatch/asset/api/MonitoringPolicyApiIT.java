@@ -87,31 +87,62 @@ class MonitoringPolicyApiIT extends PostgresContainerSupport {
 
     @Test
     void should_publish_policy_snapshot_event_on_create_and_delete() {
-        Map<String, Object> consumerProps = org.springframework.kafka.test.utils.KafkaTestUtils
-                .consumerProps(kafkaBootstrapServers(), "policy-events-it", "true");
-        try (var consumer = new org.springframework.kafka.core.DefaultKafkaConsumerFactory<>(consumerProps,
-                new org.apache.kafka.common.serialization.StringDeserializer(),
-                new org.apache.kafka.common.serialization.StringDeserializer()).createConsumer()) {
-            consumer.subscribe(List.of("device.policy-updated.v1"));
-
+        try (var consumer = policyTopicConsumer("policy-events-it")) {
             ResponseEntity<Map> created = rest.postForEntity(policiesUrl(),
                     Map.of("metric", "TEMPERATURE", "minimum", 2.0, "maximum", 8.0,
                             "violationDurationSeconds", 180, "severity", "HIGH"),
                     Map.class);
             String policyId = (String) created.getBody().get("id");
 
-            var snapshot = org.springframework.kafka.test.utils.KafkaTestUtils.getSingleRecord(
-                    consumer, "device.policy-updated.v1", java.time.Duration.ofSeconds(15));
-            assertThat(snapshot.key()).isEqualTo(deviceId);
-            assertThat(snapshot.value()).contains("\"DEVICE_MONITORING_POLICY_UPDATED\"");
-            assertThat(snapshot.value()).contains("\"TEMPERATURE\"");
+            String snapshot = awaitSnapshotFor(consumer, value -> value.contains("\"TEMPERATURE\""));
+            assertThat(snapshot).contains("\"DEVICE_MONITORING_POLICY_UPDATED\"");
 
             rest.exchange(policiesUrl() + "/" + policyId, HttpMethod.DELETE, null, Void.class);
 
-            var afterDelete = org.springframework.kafka.test.utils.KafkaTestUtils.getSingleRecord(
-                    consumer, "device.policy-updated.v1", java.time.Duration.ofSeconds(15));
-            assertThat(afterDelete.value()).contains("\"policies\":[]");
+            awaitSnapshotFor(consumer, value -> value.contains("\"policies\":[]"));
         }
+    }
+
+    @Test
+    void should_publish_empty_snapshot_when_device_with_policies_is_deleted() {
+        try (var consumer = policyTopicConsumer("device-delete-it")) {
+            rest.postForEntity(policiesUrl(),
+                    Map.of("metric", "TEMPERATURE", "minimum", 2.0, "maximum", 8.0,
+                            "violationDurationSeconds", 180, "severity", "HIGH"),
+                    Map.class);
+            awaitSnapshotFor(consumer, value -> value.contains("\"TEMPERATURE\""));
+
+            rest.exchange("/api/devices/" + deviceId, HttpMethod.DELETE, null, Void.class);
+
+            awaitSnapshotFor(consumer, value -> value.contains("\"policies\":[]"));
+        }
+    }
+
+    private org.apache.kafka.clients.consumer.Consumer<String, String> policyTopicConsumer(String group) {
+        Map<String, Object> consumerProps = org.springframework.kafka.test.utils.KafkaTestUtils
+                .consumerProps(kafkaBootstrapServers(), group + System.nanoTime(), "true");
+        var consumer = new org.springframework.kafka.core.DefaultKafkaConsumerFactory<>(consumerProps,
+                new org.apache.kafka.common.serialization.StringDeserializer(),
+                new org.apache.kafka.common.serialization.StringDeserializer()).createConsumer();
+        consumer.subscribe(List.of("device.policy-updated.v1"));
+        return consumer;
+    }
+
+    /**
+     * The topic is shared by every test in the JVM, so filter to this test's
+     * device and the expected content instead of assuming a single record.
+     */
+    private String awaitSnapshotFor(org.apache.kafka.clients.consumer.Consumer<String, String> consumer,
+                                    java.util.function.Predicate<String> expected) {
+        long deadline = System.currentTimeMillis() + 15_000;
+        while (System.currentTimeMillis() < deadline) {
+            for (var record : consumer.poll(java.time.Duration.ofMillis(250))) {
+                if (deviceId.equals(record.key()) && expected.test(record.value())) {
+                    return record.value();
+                }
+            }
+        }
+        throw new AssertionError("No matching policy snapshot for device " + deviceId);
     }
 
     @Test

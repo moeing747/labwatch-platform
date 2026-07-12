@@ -10,11 +10,14 @@ import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
- * Transient failures (database or network outages) are retried with backoff;
- * permanent failures (malformed payloads) go straight to the dead-letter topic.
+ * Permanent failures (malformed payloads) go straight to the dead-letter topic.
+ * Transient failures (database or network outages) are retried indefinitely
+ * with capped exponential backoff: consumption pauses until the dependency
+ * heals. Valid events must never be dead-lettered just because an outage
+ * outlasted a retry budget - a DLT'd event has no replay path.
  * The recoverer appends failure metadata headers: original topic, partition,
  * offset, exception class and message, and failure timestamp.
  */
@@ -23,9 +26,8 @@ public class KafkaErrorHandlingConfig {
 
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(KafkaOperations<Object, Object> kafkaTemplate) {
-        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
-        backOff.setInitialInterval(1_000);
-        backOff.setMultiplier(2.0);
+        ExponentialBackOff backOff = new ExponentialBackOff(1_000, 2.0);
+        backOff.setMaxInterval(30_000);
 
         // Our DLT naming is <topic>.dlt (see docs/reliability.md); Spring's default suffix is -dlt.
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate,
