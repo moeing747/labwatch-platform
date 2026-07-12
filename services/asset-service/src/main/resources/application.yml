@@ -18,6 +18,12 @@ spring:
   flyway:
     schemas: asset
     default-schema: asset
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
 
 springdoc:
   api-docs:

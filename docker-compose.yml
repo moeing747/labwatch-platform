@@ -50,8 +50,20 @@ services:
       - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     depends_on:
       postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  monitoring-service:
+    build: services/monitoring-service
+    container_name: labwatch-monitoring-service
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      kafka:
         condition: service_healthy
 
   telemetry-service:

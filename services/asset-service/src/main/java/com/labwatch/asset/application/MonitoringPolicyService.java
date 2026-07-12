@@ -8,6 +8,7 @@ import com.labwatch.asset.domain.MonitoringPolicy;
 import com.labwatch.asset.domain.MonitoringPolicyRepository;
 import com.labwatch.asset.domain.ResourceNotFoundException;
 import com.labwatch.asset.domain.Severity;
+import com.labwatch.asset.messaging.PolicyEventPublisher;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -22,11 +23,14 @@ public class MonitoringPolicyService {
 
     private final MonitoringPolicyRepository policies;
     private final DeviceRepository devices;
+    private final PolicyEventPublisher publisher;
     private final Clock clock;
 
-    public MonitoringPolicyService(MonitoringPolicyRepository policies, DeviceRepository devices, Clock clock) {
+    public MonitoringPolicyService(MonitoringPolicyRepository policies, DeviceRepository devices,
+                                   PolicyEventPublisher publisher, Clock clock) {
         this.policies = policies;
         this.devices = devices;
+        this.publisher = publisher;
         this.clock = clock;
     }
 
@@ -39,7 +43,9 @@ public class MonitoringPolicyService {
         }
         MonitoringPolicy policy = MonitoringPolicy.create(device, metric, minimum, maximum,
                 violationDurationSeconds, severity, Instant.now(clock));
-        return policies.save(policy);
+        MonitoringPolicy saved = policies.save(policy);
+        publishSnapshot(device);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -51,11 +57,20 @@ public class MonitoringPolicyService {
                                    int violationDurationSeconds, Severity severity) {
         MonitoringPolicy policy = getPolicy(deviceId, policyId);
         policy.update(minimum, maximum, violationDurationSeconds, severity, Instant.now(clock));
+        publishSnapshot(policy.getDevice());
         return policy;
     }
 
     public void delete(String deviceId, UUID policyId) {
-        policies.delete(getPolicy(deviceId, policyId));
+        MonitoringPolicy policy = getPolicy(deviceId, policyId);
+        Device device = policy.getDevice();
+        policies.delete(policy);
+        policies.flush();
+        publishSnapshot(device);
+    }
+
+    private void publishSnapshot(Device device) {
+        publisher.publishPolicySnapshot(device.getDeviceId(), policies.findByDeviceId(device.getId()));
     }
 
     private Device getDevice(String deviceId) {

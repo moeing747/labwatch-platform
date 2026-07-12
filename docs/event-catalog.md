@@ -108,6 +108,11 @@ Topic:
 device.policy-updated.v1
 ```
 
+Message key: `deviceId`. The topic is compacted and the payload carries the
+device's complete current policy set (not a delta), so consumers can treat it
+as a state stream: the latest record per device is the full truth, and a
+deleted policy is simply absent from the next snapshot.
+
 Example:
 
 ```json
@@ -115,11 +120,15 @@ Example:
   "eventType": "DEVICE_MONITORING_POLICY_UPDATED",
   "payload": {
     "deviceId": "chamber-042",
-    "metric": "TEMPERATURE",
-    "minimum": 2.0,
-    "maximum": 8.0,
-    "violationDurationSeconds": 180,
-    "severity": "HIGH"
+    "policies": [
+      {
+        "metric": "TEMPERATURE",
+        "minimum": 2.0,
+        "maximum": 8.0,
+        "violationDurationSeconds": 180,
+        "severity": "HIGH"
+      }
+    ]
   }
 }
 ```

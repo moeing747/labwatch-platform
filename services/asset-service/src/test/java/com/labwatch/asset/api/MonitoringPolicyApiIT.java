@@ -86,6 +86,35 @@ class MonitoringPolicyApiIT extends PostgresContainerSupport {
     }
 
     @Test
+    void should_publish_policy_snapshot_event_on_create_and_delete() {
+        Map<String, Object> consumerProps = org.springframework.kafka.test.utils.KafkaTestUtils
+                .consumerProps(kafkaBootstrapServers(), "policy-events-it", "true");
+        try (var consumer = new org.springframework.kafka.core.DefaultKafkaConsumerFactory<>(consumerProps,
+                new org.apache.kafka.common.serialization.StringDeserializer(),
+                new org.apache.kafka.common.serialization.StringDeserializer()).createConsumer()) {
+            consumer.subscribe(List.of("device.policy-updated.v1"));
+
+            ResponseEntity<Map> created = rest.postForEntity(policiesUrl(),
+                    Map.of("metric", "TEMPERATURE", "minimum", 2.0, "maximum", 8.0,
+                            "violationDurationSeconds", 180, "severity", "HIGH"),
+                    Map.class);
+            String policyId = (String) created.getBody().get("id");
+
+            var snapshot = org.springframework.kafka.test.utils.KafkaTestUtils.getSingleRecord(
+                    consumer, "device.policy-updated.v1", java.time.Duration.ofSeconds(15));
+            assertThat(snapshot.key()).isEqualTo(deviceId);
+            assertThat(snapshot.value()).contains("\"DEVICE_MONITORING_POLICY_UPDATED\"");
+            assertThat(snapshot.value()).contains("\"TEMPERATURE\"");
+
+            rest.exchange(policiesUrl() + "/" + policyId, HttpMethod.DELETE, null, Void.class);
+
+            var afterDelete = org.springframework.kafka.test.utils.KafkaTestUtils.getSingleRecord(
+                    consumer, "device.policy-updated.v1", java.time.Duration.ofSeconds(15));
+            assertThat(afterDelete.value()).contains("\"policies\":[]");
+        }
+    }
+
+    @Test
     void should_update_and_delete_policy() {
         ResponseEntity<Map> created = rest.postForEntity(policiesUrl(),
                 Map.of("metric", "TEMPERATURE", "minimum", 2.0, "maximum", 8.0,

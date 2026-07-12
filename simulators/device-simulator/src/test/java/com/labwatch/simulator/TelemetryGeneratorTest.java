@@ -29,6 +29,17 @@ class TelemetryGeneratorTest {
     }
 
     @Test
+    void should_spike_briefly_then_return_to_normal_when_profile_is_sudden_spike() {
+        TelemetryGenerator generator = new TelemetryGenerator(FailureProfile.SUDDEN_SPIKE, 42);
+
+        TelemetryGenerator.Reading duringSpike = generator.next(0, Duration.ofSeconds(10));
+        TelemetryGenerator.Reading afterSpike = generator.next(0, Duration.ofSeconds(60));
+
+        assertThat(duringSpike.temperature()).isGreaterThan(new BigDecimal("8.0"));
+        assertThat(afterSpike.temperature()).isLessThan(new BigDecimal("8.0"));
+    }
+
+    @Test
     void should_be_deterministic_for_same_seed() {
         TelemetryGenerator first = new TelemetryGenerator(FailureProfile.NORMAL, 7);
         TelemetryGenerator second = new TelemetryGenerator(FailureProfile.NORMAL, 7);
