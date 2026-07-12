@@ -32,9 +32,18 @@ REST handles synchronous commands and configuration; Kafka carries asynchronous 
 
 Java 21 · Spring Boot 3.5 (Web, Validation, Data JPA, Kafka) · Kafka Streams · PostgreSQL · Flyway · Docker Compose · JUnit 5 · Testcontainers · Awaitility · OpenAPI · Micrometer · Prometheus · Grafana · GitHub Actions
 
+## Getting Started
+
+Prerequisites: JDK 21 or newer (`JAVA_HOME` must point to it) and Docker. The Maven Wrapper downloads Maven automatically.
+
+```bash
+./mvnw verify          # build and test all modules
+docker compose up -d   # start Kafka and PostgreSQL
+```
+
 ## Status
 
-Design and documentation are complete; implementation proceeds phase by phase per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md). Getting-started instructions will be added once the first runnable services land.
+The build and infrastructure skeleton is in place; services are implemented phase by phase per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md).
 
 ## Repository Structure
 
