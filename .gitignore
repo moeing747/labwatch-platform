@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Maven
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# Coding agent artifacts (local only, not part of the published project)
+CLAUDE.md
+.claude/
+artifacts/
