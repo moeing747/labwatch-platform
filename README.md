@@ -39,7 +39,16 @@ Prerequisites: JDK 21 or newer (`JAVA_HOME` must point to it) and Docker. The Ma
 ```bash
 git config core.hooksPath .githooks   # enable the commit-message hook (once)
 ./mvnw verify                         # build and test all modules
-docker compose up -d                  # start Kafka and PostgreSQL
+docker compose up -d                  # start Kafka, PostgreSQL, and the services
+```
+
+To run the device simulation (5 devices with a temperature-drift profile posting telemetry through Kafka into PostgreSQL):
+
+```bash
+./mvnw package
+docker compose --profile simulation up -d --build
+docker exec labwatch-postgres psql -U labwatch -d labwatch \
+  -c "SELECT device_id, count(*) FROM telemetry.telemetry_readings GROUP BY device_id;"
 ```
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/); see the [Coding Guidelines](docs/coding-guidelines.md).

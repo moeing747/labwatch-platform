@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: telemetry-storage-consumer
+  datasource:
+    url: jdbc:postgresql://localhost:5432/labwatch
+    username: labwatch
+    password: labwatch
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: telemetry
+  flyway:
+    schemas: telemetry
+    default-schema: telemetry
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: telemetry-storage-consumer.persist
+      auto-offset-reset: earliest
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false

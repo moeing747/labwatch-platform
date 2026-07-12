@@ -43,5 +43,53 @@ services:
       retries: 10
       start_period: 10s
 
+  asset-service:
+    build: services/asset-service
+    container_name: labwatch-asset-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  telemetry-service:
+    build: services/telemetry-service
+    container_name: labwatch-telemetry-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  telemetry-storage-consumer:
+    build: services/telemetry-storage-consumer
+    container_name: labwatch-telemetry-storage-consumer
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  device-simulator:
+    build: simulators/device-simulator
+    container_name: labwatch-device-simulator
+    profiles:
+      - simulation
+    command:
+      - --target=http://telemetry-service:8082
+      - --devices=5
+      - --rate=5
+      - --failure-profile=temperature-drift
+    depends_on:
+      telemetry-service:
+        condition: service_started
+
 volumes:
   postgres-data:
