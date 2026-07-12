@@ -1,0 +1,26 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: asset-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/labwatch
+    username: labwatch
+    password: labwatch
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: asset
+  flyway:
+    schemas: asset
+    default-schema: asset
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
