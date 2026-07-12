@@ -66,6 +66,20 @@ services:
       kafka:
         condition: service_healthy
 
+  incident-service:
+    build: services/incident-service
+    container_name: labwatch-incident-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
   telemetry-service:
     build: services/telemetry-service
     container_name: labwatch-telemetry-service

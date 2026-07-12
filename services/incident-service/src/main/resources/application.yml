@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: incident-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/labwatch
+    username: labwatch
+    password: labwatch
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: incident
+  flyway:
+    schemas: incident
+    default-schema: incident
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: incident-service.violation-consumer
+      auto-offset-reset: earliest
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
