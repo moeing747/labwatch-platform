@@ -2,6 +2,21 @@
 
 Operationalizes the [roadmap](roadmap.md). The roadmap defines phases and exit criteria; this plan defines concrete build order, versions, and working agreements. The [coding guidelines](coding-guidelines.md) apply to every step.
 
+## Progress
+
+| Phase | Status |
+|---|---|
+| 0 — Bootstrap | Done (2026-07-12) |
+| 1 — Asset Service | Done (2026-07-12) |
+| 2 — Telemetry Pipeline | Done (2026-07-12) |
+| 3 — Monitoring Engine | Done (2026-07-12) |
+| 4 — Incident Workflow | Next |
+| 5 — Reliability | Pending |
+| 6 — Transactional Outbox | Pending |
+| 7 — Observability | Pending |
+
+Update this table in the same change that completes a phase.
+
 ## Versions
 
 ```text

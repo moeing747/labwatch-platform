@@ -9,6 +9,7 @@
 - Measurement configuration
 - Monitoring threshold policies
 - Device-to-location assignment
+- Publish per-device policy snapshots on every policy change
 
 ### Example Endpoints
 
@@ -40,6 +41,14 @@ devices
 locations
 monitoring_policies
 ```
+
+### Output Topic
+
+```text
+device.policy-updated.v1
+```
+
+Each event carries the device's complete current policy set, keyed by `deviceId` (see the [event catalog](event-catalog.md)).
 
 ### Learning Objectives
 
