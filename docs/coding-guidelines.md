@@ -98,6 +98,13 @@ Dependencies point inward: `api` and `messaging` depend on `application`, `appli
 - Modules: `services/*`, `simulators/device-simulator`, `contracts/event-contracts`.
 - `mvn verify` from the root must always pass. Integration tests run in the `verify` phase via Failsafe (`*IT` classes); unit tests via Surefire (`*Test` classes).
 
+## Commits
+
+- Subject lines follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>)?: <description>`.
+- Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- Subject is imperative mood, at most 72 characters.
+- Enforced locally by `.githooks/commit-msg` (enable once with `git config core.hooksPath .githooks`) and in CI on every push.
+
 ## Scope Guard
 
 The non-goals in [architecture.md](architecture.md) and ADR 0005 are binding. Do not introduce Kubernetes, Elasticsearch, GraphQL, Redis, Keycloak, event sourcing, CQRS frameworks, AI anomaly detection, or additional database technologies without a new ADR that names the concrete problem being solved.

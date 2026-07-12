@@ -37,9 +37,12 @@ Java 21 · Spring Boot 3.5 (Web, Validation, Data JPA, Kafka) · Kafka Streams �
 Prerequisites: JDK 21 or newer (`JAVA_HOME` must point to it) and Docker. The Maven Wrapper downloads Maven automatically.
 
 ```bash
-./mvnw verify          # build and test all modules
-docker compose up -d   # start Kafka and PostgreSQL
+git config core.hooksPath .githooks   # enable the commit-message hook (once)
+./mvnw verify                         # build and test all modules
+docker compose up -d                  # start Kafka and PostgreSQL
 ```
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/); see the [Coding Guidelines](docs/coding-guidelines.md).
 
 ## Status
 
