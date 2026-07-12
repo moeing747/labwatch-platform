@@ -23,8 +23,9 @@ import org.springframework.stereotype.Component;
  * Publishes the device's complete current policy set after every policy change.
  *
  * Publishing is asynchronous and best-effort: a Kafka outage must not fail the
- * REST request. The lost-event window this leaves is addressed by the
- * transactional outbox in roadmap Phase 6.
+ * REST request. This leaves a small lost-event window; the incident service
+ * closes the same gap with a transactional outbox (Phase 6), and the pattern
+ * can be replicated here if policy-event loss ever matters in practice.
  */
 @Component
 public class PolicyEventPublisher {

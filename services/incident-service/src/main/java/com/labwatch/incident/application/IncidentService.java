@@ -8,7 +8,7 @@ import com.labwatch.incident.domain.IncidentHistoryEntry;
 import com.labwatch.incident.domain.IncidentHistoryRepository;
 import com.labwatch.incident.domain.IncidentRepository;
 import com.labwatch.incident.domain.ResourceNotFoundException;
-import com.labwatch.incident.messaging.IncidentEventPublisher;
+import com.labwatch.incident.messaging.OutboxWriter;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -22,11 +22,11 @@ public class IncidentService {
 
     private final IncidentRepository incidents;
     private final IncidentHistoryRepository history;
-    private final IncidentEventPublisher publisher;
+    private final OutboxWriter publisher;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentHistoryRepository history,
-                           IncidentEventPublisher publisher, Clock clock) {
+                           OutboxWriter publisher, Clock clock) {
         this.incidents = incidents;
         this.history = history;
         this.publisher = publisher;

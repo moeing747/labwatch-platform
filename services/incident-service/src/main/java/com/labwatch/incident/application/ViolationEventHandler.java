@@ -12,7 +12,7 @@ import com.labwatch.incident.domain.IncidentHistoryRepository;
 import com.labwatch.incident.domain.IncidentRepository;
 import com.labwatch.incident.domain.ProcessedEvent;
 import com.labwatch.incident.domain.ProcessedEventRepository;
-import com.labwatch.incident.messaging.IncidentEventPublisher;
+import com.labwatch.incident.messaging.OutboxWriter;
 import java.time.Clock;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -35,11 +35,11 @@ public class ViolationEventHandler {
     private final IncidentRepository incidents;
     private final IncidentHistoryRepository history;
     private final ProcessedEventRepository processedEvents;
-    private final IncidentEventPublisher publisher;
+    private final OutboxWriter publisher;
     private final Clock clock;
 
     public ViolationEventHandler(IncidentRepository incidents, IncidentHistoryRepository history,
-                                 ProcessedEventRepository processedEvents, IncidentEventPublisher publisher,
+                                 ProcessedEventRepository processedEvents, OutboxWriter publisher,
                                  Clock clock) {
         this.incidents = incidents;
         this.history = history;
