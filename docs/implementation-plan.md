@@ -11,8 +11,8 @@ Operationalizes the [roadmap](roadmap.md). The roadmap defines phases and exit c
 | 2 — Telemetry Pipeline | Done (2026-07-12) |
 | 3 — Monitoring Engine | Done (2026-07-12) |
 | 4 — Incident Workflow | Done (2026-07-12) |
-| 5 — Reliability | Next |
-| 6 — Transactional Outbox | Pending |
+| 5 — Reliability | Done (2026-07-12) |
+| 6 — Transactional Outbox | Next |
 | 7 — Observability | Pending |
 
 Update this table in the same change that completes a phase.

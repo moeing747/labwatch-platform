@@ -51,6 +51,13 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,6 +69,13 @@ services:
     container_name: labwatch-monitoring-service
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8085/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -74,6 +88,13 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,6 +108,13 @@ services:
       - "8082:8082"
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -97,6 +125,13 @@ services:
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/labwatch
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -115,7 +150,7 @@ services:
       - --failure-profile=temperature-drift
     depends_on:
       telemetry-service:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres-data:

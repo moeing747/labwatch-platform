@@ -11,6 +11,7 @@ import com.labwatch.incident.application.ViolationEventHandler;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -36,13 +37,21 @@ public class ViolationListener {
 
     @KafkaListener(topics = Topics.MONITORING_VIOLATIONS_V1)
     public void onViolation(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        String eventType = objectMapper.readTree(record.value()).path("eventType").asText();
-        if (eventType.endsWith("_VIOLATION_STARTED")) {
-            handler.onViolationStarted(objectMapper.readValue(record.value(), STARTED_EVENT));
-        } else if (eventType.endsWith("_VIOLATION_RESOLVED")) {
-            handler.onViolationResolved(objectMapper.readValue(record.value(), RESOLVED_EVENT));
-        } else {
-            log.warn("Ignoring unknown event type {} on {}", eventType, Topics.MONITORING_VIOLATIONS_V1);
+        var root = objectMapper.readTree(record.value());
+        String eventType = root.path("eventType").asText();
+        try {
+            MDC.put("correlationId", root.path("correlationId").asText());
+            MDC.put("eventId", root.path("eventId").asText());
+            MDC.put("deviceId", record.key());
+            if (eventType.endsWith("_VIOLATION_STARTED")) {
+                handler.onViolationStarted(objectMapper.readValue(record.value(), STARTED_EVENT));
+            } else if (eventType.endsWith("_VIOLATION_RESOLVED")) {
+                handler.onViolationResolved(objectMapper.readValue(record.value(), RESOLVED_EVENT));
+            } else {
+                log.warn("Ignoring unknown event type {} on {}", eventType, Topics.MONITORING_VIOLATIONS_V1);
+            }
+        } finally {
+            MDC.clear();
         }
     }
 }

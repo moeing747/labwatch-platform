@@ -55,7 +55,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 ## Status
 
-Phases 0–3 are implemented: device and policy management (Asset Service), the telemetry pipeline (Telemetry Service, Kafka, storage consumer), and the Kafka Streams monitoring engine that detects sustained threshold violations — all running in Docker Compose with a device simulator. The incident workflow and reliability hardening follow per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md).
+Phases 0–5 are implemented: device and policy management (Asset Service), the telemetry pipeline (Telemetry Service, Kafka, storage consumer), the Kafka Streams monitoring engine detecting sustained threshold violations, the incident workflow with an idempotent violation consumer, and reliability hardening (retries with backoff, dead-letter topics, structured JSON logs with correlation IDs, health probes) — all running in Docker Compose with a device simulator. The transactional outbox and observability stack follow per the [Roadmap](docs/roadmap.md) and [Implementation Plan](docs/implementation-plan.md).
 
 ## Repository Structure
 

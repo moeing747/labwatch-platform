@@ -37,6 +37,7 @@ public class TelemetryStorageService {
         }
         try {
             readings.save(TelemetryReading.from(envelope, Instant.now(clock)));
+            log.info("Telemetry stored for device {}", envelope.payload().deviceId());
         } catch (DataIntegrityViolationException exception) {
             log.info("Concurrent duplicate telemetry event {} ignored", envelope.eventId());
         }
